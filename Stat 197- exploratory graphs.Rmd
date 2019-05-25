@@ -1,0 +1,137 @@
+---
+title: "exploratory graphs"
+author: "Kate Annabelle Flores"
+date: "May 25, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE}
+#Kate Annabelle Flores
+
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(lattice)
+
+#read datasets
+NEI<- readRDS("summarySCC_PM25.rds")
+SCC<- readRDS("Source_Classification_Code.rds")
+
+
+#number 1
+
+Nei1<- data.frame(year1=NEI$year, emission1= NEI$Emissions)
+Nei2<-ddply(Nei1, .(year1), summarize, emissionSum1=sum(emission1)) 
+Nei3<- data.frame(Nei2$emissionSum1, y1= factor(Nei2$year1), levels=c("1999", "2000", "2005", "2008"))
+barplot(Nei3$Nei2.emissionSum1, names= Nei3$y1, xlab= "Year", ylab="emission", main= "Total emission in US by Year")
+```
+
+```{r include=TRUE}
+Based on the graph, the total emission from PM2.5 decreased in the US from 1999 to 2008.
+```
+
+```{r echo=FALSE}
+#number 2
+    #Includes Baltimore City only
+baltimore<- filter(NEI, fips=="24510")
+dataBaltimore1<-select(baltimore, Emissions, year)
+dataBaltimore2<-data.frame(year2= dataBaltimore1$year, emission2=dataBaltimore1$Emissions)
+dataBaltimore4<- ddply(dataBaltimore2, .(year2), summarize, emissionSum2=sum(emission2))
+dataBaltimore5<- data.frame(dataBaltimore4$emissionSum2, y2= factor(dataBaltimore4$year2), levels=c("1999", "2000", "2005", "2008"))
+barplot(dataBaltimore5$dataBaltimore4.emissionSum2, names= dataBaltimore5$y2, xlab= "Year", ylab="emission", main= "Total emission in Baltimore by year")
+```
+
+```{r include=TRUE}
+Based on the graph, the total emission from PM2.5 fluctuates from 1999 to 2008. 
+A decrease on the emission on PM2.5 started from 1999-2002 and from 2005-2008. 
+An increase on the emission on PM2.5 started from 2002-2005. 
+```
+
+```{r echo=FALSE}
+#number 3
+barchart(Emissions ~ factor(year) | factor(type), data= baltimore, layout= c(4,1))
+```
+
+```{r echo=TRUE}
+In Baltimore City, the following conclusions were made based on the graph:
+Of the four types of sources, Nonpoint source shows a consistent decrease on the emission due to PM2.5 from 1999 to 2008.
+On-road source decreased on the emission on PM2.5 from 1999-2002 but remains after starting from 2002-2008.
+Point source increased on the emission on PM2.5 from 1999-2005 but eventually decreased after starting from 2005- 2008.
+```
+
+```{r echo=FALSE}
+#number 4
+colnames(SCC)
+    #object that saves an item with the same pattern stated which is coal
+coal<- grepl(pattern="coal", SCC$Short.Name, ignore.case= TRUE) 
+
+    #updates the dataset which contains coal sources only
+SCC2<- SCC[coal,]  
+
+
+dataMerge1<- merge(NEI, SCC2, by.x="SCC", by.y="SCC", by="SCC" )
+dataMerge2<- data.frame(emission3=dataMerge1$Emissions, year3= dataMerge1$year)
+
+dataMerge3<-ddply(dataMerge2, .(year3), summarize, emissionSum3=sum(emission3)) 
+dataMerge4<- data.frame(dataMerge3$emissionSum3, y3= factor(dataMerge3$year3), levels=c("1999", "2000", "2005", "2008"))
+barplot(dataMerge4$dataMerge3.emissionSum3, names=dataMerge4$y3, xlab= "Year", ylab="emission", main= "Emissions from coal combustion-related sources in US by year")
+```
+
+```{r echo=TRUE}
+The emission due to coal combustion-related sources in US decreased gradually from 1999 to 2002
+and increased gradually from 2002-2005. From 2005, there was a sudden decrease on the emission due
+to coal combustion-related sources until 2008. 
+```
+
+```{r echo=FALSE}
+#number 5
+    #object that saves an item with the same pattern stated which is vehicle
+vehicle<- grepl(pattern= "vehicle", SCC$SCC.Level.Two, ignore.case = TRUE)
+    #updates the dataset which contains motor vehicle sources only
+SCC_3<-SCC[vehicle,]
+
+mergeBaltimore1<- merge(baltimore, SCC_3, by.x="SCC", by.y = "SCC", by-"SCC")
+mergeBaltimore2<- data.frame(emission4= mergeBaltimore1$Emissions, year4=mergeBaltimore1$year)
+
+dataB1<- ddply(mergeBaltimore2, .(year4), summarize, emissionSum4= sum(emission4))
+dataB2<- data.frame(dataB1$emissionSum4, y4= factor(dataB1$year4), levels=c("1999", "2000", "2005", "2008"))
+barplot(dataB2$dataB1.emissionSum4, names=dataB2$y4, xlab = "Year", ylab = "emission", main="Emissions from vehicle sources in Baltimore City by year")
+```
+
+```{r echo= TRUE}
+In Baltimore City, the graphs shows a decrease on the emission due to vehicle sources only from 1999-2008.
+```
+
+```{r echo=FALSE}
+#number 6
+dataLA<- filter(NEI, fips=="06037")
+
+    #object that saves an item with the same pattern stated which is vehicle
+vehicle<- grepl(pattern= "Vehicle", SCC$SCC.Level.Two, ignore.case = TRUE)
+    
+    #updates the dataset which contains motor vehicle sources only
+SCC_3<-SCC[vehicle,]
+
+
+    #merge data for Baltimore and LA
+mergeBaltimore1<- merge(baltimore, SCC_3, by.x="SCC", by.y = "SCC", by="SCC")
+mergeBaltimore1$city<- "Baltimore City"
+mergeLA<- merge(dataLA, SCC_3, by.x = "SCC", by.y = "SCC", by="SCC")
+mergeLA$city<- "Los Angeles City"
+dataBL1<- rbind(mergeBaltimore1, mergeLA)
+barchart(Emissions ~factor(year) | factor(city), data= dataBL1, layout= c(2,1))
+```
+
+```{r echo=TRUE}
+Comparing the two cities based on the emission due to motor vehicle sources, Los Angeles City has seen to
+have the greater change over time wherein there was a sudden decrease from 1999-2002 and there was
+also a sudden increase from 2005-2008. 
+```
+
+
+
+
